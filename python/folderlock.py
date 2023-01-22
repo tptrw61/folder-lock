@@ -118,14 +118,18 @@ def checkLockPid(__path: str) -> int:
 
 
 class FolderMutex:
-    def __init__(self, where='', name='LOCK', timeout_secs: float=1.) -> None:
+    def __init__(self, where='', name='LOCK', timeout_secs: float=1., *, pid: int|None=None, checkPid=True) -> None:
         import os
         self._path: str
         if where == '' or where == '.':
             self._path = name
         else:
             self._path = os.path.join(where, name)
-        self._pid = os.getpid()
+        if isinstance(pid, int):
+            self._pid = pid
+        else:
+            self._pid = os.getpid()
+        self._checkPid = checkPid
         self.timeout = timeout_secs
     
     def __enter__(self):
@@ -140,7 +144,7 @@ class FolderMutex:
         try:
             os.mkdir(self._path)
         except FileExistsError:
-            if not lockOwnerAlive(checkLockPid(self._path)):
+            if not lockOwnerAlive(checkLockPid(self._path)) and self._checkPid:
                 self._forceUnlock()
                 return self.tryLock()
             return False
@@ -154,7 +158,7 @@ class FolderMutex:
             try:
                 os.mkdir(__path)
             except FileExistsError:
-                if not lockOwnerAlive(checkLockPid(__path)):
+                if not lockOwnerAlive(checkLockPid(__path)) and self._checkPid:
                     static_force_unlock(__path)
                     return lock(__path)
                 return False
