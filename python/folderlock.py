@@ -47,7 +47,7 @@ def static_try_lock(where: str='', name: str='LOCK') -> bool:
             static_force_unlock(path)
             return static_try_lock(where, name)
         return False
-    with open(os.path.join(path, str(os.getpid()))) as f:
+    with open(os.path.join(path, str(os.getpid())), 'w') as f:
         pass
     return True
 
@@ -63,14 +63,17 @@ def static_lock(where: str='', name: str='LOCK', timeout_secs: float=1.) -> None
         try:
             os.mkdir(__path)
         except FileExistsError:
-            if not lockOwnerAlive(checkLockPid(__path)):
+            pid = checkLockPid(__path)
+            if pid < 0:
+                raise FileNotFoundError("No PID file found")
+            if not lockOwnerAlive(pid):
                 static_force_unlock(__path)
                 return lock(__path)
             return False
         return True
     while not lock(path):
         time.sleep(timeout_secs)
-    with open(os.path.join(path, str(os.getpid()))) as f:
+    with open(os.path.join(path, str(os.getpid())), 'w') as f:
         pass
 
 def static_unlock(where: str='', name: str='LOCK') -> bool:
@@ -125,6 +128,13 @@ class FolderMutex:
         self._pid = os.getpid()
         self.timeout = timeout_secs
     
+    def __enter__(self):
+        self.lock()
+        return self
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.unlock()
+        return False #allow exceptions to continue propagating
+
     def tryLock(self) -> bool:
         import os
         try:
@@ -134,7 +144,7 @@ class FolderMutex:
                 self._forceUnlock()
                 return self.tryLock()
             return False
-        with open(os.path.join(self._path, str(self._pid))) as f:
+        with open(os.path.join(self._path, str(self._pid)), 'w') as f:
             pass
         return True
     def lock(self) -> None:
@@ -151,7 +161,7 @@ class FolderMutex:
             return True
         while not lock(self._path):
             time.sleep(self.timeout)
-        with open(os.path.join(self._path, str(self._pid))) as f:
+        with open(os.path.join(self._path, str(self._pid)), 'w') as f:
             pass
 
     def unlock(self) -> bool:
