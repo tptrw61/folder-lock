@@ -120,7 +120,7 @@ def checkLockPid(__path: str) -> int:
 
 
 class FolderMutex:
-    def __init__(self, where='', name='LOCK', timeout_secs: float=1., *, pid: int|None=None, checkPid=True) -> None:
+    def __init__(self, where='', name='LOCK', timeout_secs: float|int=1., *, pid: int|None=None, checkPid=True) -> None:
         import os
         self._path: str
         if where == '' or where == '.':
@@ -158,7 +158,7 @@ class FolderMutex:
         if isinstance(timeout, float):
             tout = timeout
         elif isinstance(timeout, int):
-            tout = float(timeout)
+            tout = timeout
         else:
             tout = self.timeout
         while not self.tryLock():
