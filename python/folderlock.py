@@ -152,21 +152,9 @@ class FolderMutex:
             pass
         return True
     def lock(self) -> None:
-        import os
         import time
-        def lock(__path: str) -> bool:
-            try:
-                os.mkdir(__path)
-            except FileExistsError:
-                if not lockOwnerAlive(checkLockPid(__path)) and self._checkPid:
-                    static_force_unlock(__path)
-                    return lock(__path)
-                return False
-            return True
-        while not lock(self._path):
+        while not self.tryLock():
             time.sleep(self.timeout)
-        with open(os.path.join(self._path, str(self._pid)), 'w') as f:
-            pass
 
     def unlock(self) -> bool:
         import os
