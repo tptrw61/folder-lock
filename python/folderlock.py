@@ -53,7 +53,7 @@ def static_try_lock(where: str='', name: str='LOCK') -> bool:
         pass
     return True
 
-def static_lock(where: str='', name: str='LOCK', timeout_secs: float=1.) -> None:
+def static_lock(where: str='', name: str='LOCK', timeout_secs: float|int=1) -> None:
     import os
     import time
     path: str
@@ -120,7 +120,7 @@ def checkLockPid(__path: str) -> int:
 
 
 class FolderMutex:
-    def __init__(self, where='', name='LOCK', timeout_secs: float|int=1., *, pid: int|None=None, checkPid=True) -> None:
+    def __init__(self, where='', name='LOCK', timeout_secs: float|int=1, *, pid: int|None=None, checkPid=True) -> None:
         import os
         self._path: str
         if where == '' or where == '.':
