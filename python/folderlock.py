@@ -5,7 +5,9 @@ def lockOwnerAlive(__pid: int) -> bool:
     if sys.platform == 'win32':
         import subprocess
         cmd = f'tasklist /fi "PID eq {__pid}"'
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW #hide console window
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE, startupinfo=startupinfo)
         if isinstance(proc.stdout, type(None)):
             raise Exception("lockOwnerAlive: subprocess.stdout is None")
         out = proc.stdout.read()
@@ -151,10 +153,16 @@ class FolderMutex:
         with open(os.path.join(self._path, str(self._pid)), 'w') as f:
             pass
         return True
-    def lock(self) -> None:
+    def lock(self, timeout: float|int|None=None) -> None:
         import time
+        if isinstance(timeout, float):
+            tout = timeout
+        elif isinstance(timeout, int):
+            tout = float(timeout)
+        else:
+            tout = self.timeout
         while not self.tryLock():
-            time.sleep(self.timeout)
+            time.sleep(tout)
 
     def unlock(self) -> bool:
         import os
